@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './index.css';
 
-const API = 'http://localhost:5000';
+const API = 'http://127.0.0.1:5000';
 
 // ============ ICONS ============
 const Ic = ({ path, size = 18 }) => (
@@ -56,7 +56,7 @@ export default function App() {
     const [token, setToken] = useState(localStorage.getItem('sg_token'));
     const [user, setUser] = useState(localStorage.getItem('sg_user') || '');
     const [page, setPage] = useState('upload'); // upload | roles | results | mock | mock-results
-    const [extractedSkills, setExtractedSkills] = useState([]);
+    const [extractedSkills, setExtractedSkills] = useState({}); // { name: score }
     const [selectedRole, setSelectedRole] = useState(null);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [mockResult, setMockResult] = useState(null);
@@ -70,7 +70,7 @@ export default function App() {
     const doLogout = () => {
         localStorage.removeItem('sg_token'); localStorage.removeItem('sg_user');
         setToken(null); setUser(''); setPage('upload');
-        setExtractedSkills([]); setSelectedRole(null); setAnalysisResult(null);
+        setExtractedSkills({}); setSelectedRole(null); setAnalysisResult(null);
     };
 
     const sendChat = async () => {
@@ -136,8 +136,8 @@ export default function App() {
                     <div className="topbar-actions">
                         {selectedRole && <span className="topbar-badge">🎯 {selectedRole.title}</span>}
                         {analysisResult && (
-                            <span className={`topbar-badge ${analysisResult.match_percentage >= 70 ? 'badge-green' : 'badge-red'}`}>
-                                {analysisResult.match_percentage >= 70 ? '✅ Ready to Apply' : '🔶 Needs Improvement'}
+                            <span className={`topbar-badge ${analysisResult.suitability_score >= 70 ? 'badge-green' : 'badge-red'}`}>
+                                {analysisResult.suitability_score >= 70 ? '✅ Ready to Apply' : '🔶 Needs Improvement'}
                             </span>
                         )}
                     </div>
@@ -193,13 +193,14 @@ function AuthPage({ setToken, setUser }) {
         const url = tab === 'login' ? `${API}/api/auth/login` : `${API}/api/auth/register`;
         try {
             const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+            if (!r.ok) throw new Error('Server returned an error.');
             const d = await r.json();
             if (d.error) { setErr(d.error); setLoading(false); return; }
             localStorage.setItem('sg_token', d.token);
             const uname = tab === 'login' ? (form.email.split('@')[0]) : form.username;
             localStorage.setItem('sg_user', uname);
             setToken(d.token); setUser(uname);
-        } catch { setErr('Cannot connect to server. Make sure the backend is running.'); }
+        } catch (e) { setErr(e.message || 'Cannot connect to server. Make sure the backend is running.'); }
         setLoading(false);
     };
 
@@ -277,6 +278,8 @@ function UploadPage({ setExtractedSkills, setPage }) {
     const [mode, setMode] = useState('pdf');
     const [text, setText] = useState('');
     const [skills, setSkills] = useState([]);
+    const [skillLevels, setSkillLevels] = useState({}); // { name: level }
+    const [nlpMetadata, setNlpMetadata] = useState(null);
     const [loading, setLoading] = useState(false);
     const [drag, setDrag] = useState(false);
     const fileRef = useRef();
@@ -288,7 +291,12 @@ function UploadPage({ setExtractedSkills, setPage }) {
         try {
             const r = await fetch(`${API}/api/resume/upload`, { method: 'POST', body: fd });
             const d = await r.json();
-            setSkills(d.extracted_skills || []);
+            const extracted = d.extracted_skills || [];
+            setSkills(extracted);
+            const initialLevels = {};
+            extracted.forEach(s => initialLevels[s] = 6); // Default: Intermediate
+            setSkillLevels(initialLevels);
+            setNlpMetadata(d.nlp_metadata || null);
         } catch { alert('Upload failed. Check backend.'); }
         setLoading(false);
     };
@@ -299,12 +307,22 @@ function UploadPage({ setExtractedSkills, setPage }) {
         try {
             const r = await fetch(`${API}/api/extract-skills`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
             const d = await r.json();
-            setSkills(d.extracted_skills || []);
+            const extracted = d.extracted_skills || [];
+            setSkills(extracted);
+            const initialLevels = {};
+            extracted.forEach(s => initialLevels[s] = 6); // Default: Intermediate
+            setSkillLevels(initialLevels);
+            setNlpMetadata(d.nlp_metadata || null);
         } catch { alert('Failed. Check backend.'); }
         setLoading(false);
     };
 
-    const proceed = () => { setExtractedSkills(skills); setPage('roles'); };
+    const proceed = () => { 
+        const final = {};
+        skills.forEach(s => final[s] = skillLevels[s] || 6);
+        setExtractedSkills(final); 
+        setPage('roles'); 
+    };
 
     return (
         <div className="fade-up" style={{ maxWidth: 760, margin: '0 auto' }}>
@@ -374,8 +392,50 @@ function UploadPage({ setExtractedSkills, setPage }) {
                     <div className="card-header">
                         <div className="card-title">✅ Skills Extracted ({skills.length})</div>
                     </div>
-                    <div className="badges-wrap mb-6">
-                        {skills.map(s => <span key={s} className="badge badge-accent">{s}</span>)}
+
+                    {nlpMetadata && nlpMetadata.chunks_detected?.length > 0 && (
+                        <div style={{marginBottom: 16, fontSize: 13, color: 'var(--text-secondary)'}}>
+                            <strong style={{color: 'var(--text-primary)'}}>Resume Chunks Parsed:</strong> {nlpMetadata.chunks_detected.join(', ')}
+                        </div>
+                    )}
+                    
+                    {nlpMetadata && (nlpMetadata.entities?.organizations?.length > 0 || nlpMetadata.entities?.dates?.length > 0) && (
+                        <div style={{marginBottom: 16, fontSize: 13, background: 'var(--bg-elevated)', padding: 12, borderRadius: 8}}>
+                            <strong style={{color: 'var(--accent)'}}>Named Entities Extracted (NER):</strong>
+                            {nlpMetadata.entities.organizations?.length > 0 && <div style={{marginTop: 6}}>🏢 Organizations: {nlpMetadata.entities.organizations.join(', ')}</div>}
+                            {nlpMetadata.entities.dates?.length > 0 && <div style={{marginTop: 6}}>📅 Dates: {nlpMetadata.entities.dates.join(', ')}</div>}
+                        </div>
+                    )}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+                        {skills.map(s => (
+                            <div key={s} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-elevated)', border: 'none' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <div className="badge badge-accent" style={{ margin: 0 }}>{s}</div>
+                                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Expertise: {nlpMetadata?.skills?.[s]?.score || 'N/A'}</span>
+                                </div>
+                                <div style={{ display: 'flex', background: 'var(--bg-base)', borderRadius: 8, padding: 3, gap: 2 }}>
+                                    {[
+                                        { label: 'Beg', val: 3 },
+                                        { label: 'Int', val: 6 },
+                                        { label: 'Exp', val: 10 }
+                                    ].map(lvl => (
+                                        <button
+                                            key={lvl.label}
+                                            onClick={() => setSkillLevels(p => ({ ...p, [s]: lvl.val }))}
+                                            style={{
+                                                padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', cursor: 'pointer',
+                                                background: skillLevels[s] === lvl.val ? 'var(--accent)' : 'transparent',
+                                                color: skillLevels[s] === lvl.val ? '#fff' : 'var(--text-secondary)',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {lvl.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                     <button className="btn btn-primary btn-lg w-full" onClick={proceed}>
                         Continue to Role Selection <Ic path={I.arrow} size={16} />
@@ -397,7 +457,7 @@ function RolePage({ extractedSkills, setSelectedRole, setAnalysisResult, setPage
     }, []);
 
     const analyze = async (job) => {
-        if (!extractedSkills.length) { alert('Please upload your resume first!'); setPage('upload'); return; }
+        if (Object.keys(extractedSkills).length === 0) { alert('Please upload your resume first!'); setPage('upload'); return; }
         setAnalyzing(job.id); setLoading(true);
         try {
             const r = await fetch(`${API}/api/analyze`, {
@@ -419,7 +479,7 @@ function RolePage({ extractedSkills, setSelectedRole, setAnalysisResult, setPage
                 <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Select the role you want to apply for. We'll match your skills against its requirements.</p>
             </div>
 
-            {!extractedSkills.length && (
+            {Object.keys(extractedSkills).length === 0 && (
                 <div className="card" style={{ marginBottom: 20, background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.25)' }}>
                     <div style={{ color: '#f59e0b', fontWeight: 600, fontSize: 13 }}>⚠️ No skills detected yet. <button className="btn btn-outline" style={{ marginLeft: 8, padding: '4px 12px', fontSize: 12 }} onClick={() => setPage('upload')}>Upload Resume first →</button></div>
                 </div>
@@ -459,7 +519,7 @@ function ResultsPage({ result, role, setPage }) {
         </div>
     );
 
-    const { match_percentage: pct, matched_skills = [], missing_skills = [], recommendations = [] } = result;
+    const { suitability_score: pct, matched_skills = [], semantic_matches = [], missing_skills = [], recommendations = [], learning_topics = [] } = result;
     const ready = pct >= 70;
 
     return (
@@ -493,11 +553,32 @@ function ResultsPage({ result, role, setPage }) {
                     {/* matched */}
                     <div className="card">
                         <div className="card-header">
-                            <div className="card-title"><div className="card-title-icon" style={{ background: 'rgba(16,185,129,0.12)' }}>✅</div>Matched Skills</div>
+                            <div className="card-title"><div className="card-title-icon" style={{ background: 'rgba(16,185,129,0.12)' }}>✅</div>Exact Match Skills</div>
                             <span className="badge badge-green">{matched_skills.length}</span>
                         </div>
                         <div className="badges-wrap">{matched_skills.map(s => <span key={s} className="badge badge-green">{s}</span>)}</div>
                     </div>
+
+                    {/* Semantic Matches */}
+                    {semantic_matches?.length > 0 && (
+                        <div className="card">
+                            <div className="card-header">
+                                <div className="card-title"><div className="card-title-icon" style={{ background: 'rgba(6,182,212,0.12)' }}>🧠</div>Semantic Matches (Word2Vec)</div>
+                                <span className="badge badge-cyan">{semantic_matches.length} found</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                {semantic_matches.map((sm, i) => (
+                                    <div key={i} className="skill-item" style={{background: 'var(--bg-elevated)', border: 'none'}}>
+                                        <div>
+                                            <span style={{fontWeight: 600, color: 'var(--text-primary)'}}>{sm.required_skill}</span>
+                                            <span style={{fontSize: 13, color: 'var(--text-secondary)', marginLeft: 8}}>matched with <em>"{sm.user_skill}"</em></span>
+                                        </div>
+                                        <span className="badge badge-cyan" style={{fontSize: 11}}>Similarity: {Math.round(sm.similarity_score * 100)}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* missing */}
                     {missing_skills.length > 0 && (
@@ -514,6 +595,16 @@ function ResultsPage({ result, role, setPage }) {
                                     </div>
                                 ))}
                             </div>
+                            
+                            {learning_topics?.length > 0 && (
+                                <div style={{marginTop: 16, padding: '12px 14px', background: 'rgba(6,182,212,0.08)', borderRadius: 10, border: '1px solid rgba(6,182,212,0.2)'}}>
+                                    <div style={{fontSize: 13, fontWeight: 700, color: '#06b6d4', marginBottom: 6}}>🧭 Suggested Learning Tracks (LDA Topic Modeling)</div>
+                                    <ul style={{margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)'}}>
+                                        {learning_topics.map((t, i) => <li key={i} style={{marginBottom: 4}}>{t}</li>)}
+                                    </ul>
+                                </div>
+                            )}
+
                             <div style={{ marginTop: 16, padding: 14, background: 'rgba(99,102,241,0.08)', borderRadius: 10, border: '1px solid var(--border-active)', fontSize: 13, color: 'var(--text-secondary)' }}>
                                 💡 Ask the <strong style={{ color: 'var(--accent)' }}>AI Career Mentor</strong> chatbot (bottom-right) for a step-by-step roadmap on how to learn these skills!
                             </div>
@@ -551,7 +642,7 @@ function ResultsPage({ result, role, setPage }) {
                         <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 20 }}>Readiness Score</div>
                         <Circle pct={pct} size={150} />
                         <div style={{ marginTop: 20, color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6 }}>
-                            {ready ? '🎉 You have the skills needed. Apply to jobs now!' : `You need to learn ${missing_skills.length} more skill${missing_skills.length !== 1 ? 's' : ''} to be ready.`}
+                            {ready ? '🎉 You have the proficiency needed. Apply to jobs now!' : `Your average proficiency is ${pct}%, which is lower than the recommended 70%.`}
                         </div>
                     </div>
 

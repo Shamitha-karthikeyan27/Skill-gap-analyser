@@ -6,7 +6,7 @@ from auth import register_user, login_user, decode_token
 import os
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:4173"])
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # ── helpers ────────────────────────────────────────────────────────────
 def current_user():
@@ -37,7 +37,7 @@ def login():
 @app.route('/api/jobs', methods=['GET'])
 def get_jobs():
     jobs = query_db("SELECT id, title, description, icon FROM job_roles ORDER BY id")
-    return jsonify([dict(j) for j in jobs])
+    return jsonify(jobs)
 
 # ── RESUME UPLOAD (PDF) ────────────────────────────────────────────────
 @app.route('/api/resume/upload', methods=['POST'])
@@ -48,8 +48,9 @@ def upload_resume():
     if not f.filename.lower().endswith('.pdf'):
         return jsonify({"error": "Only PDF files are supported"}), 400
     pdf_bytes = f.read()
-    skills = extract_skills_from_pdf(pdf_bytes)
-    return jsonify({"extracted_skills": skills})
+    res = extract_skills_from_pdf(pdf_bytes)
+    skills_list = list(res.get("skills", {}).keys())
+    return jsonify({"extracted_skills": skills_list, "nlp_metadata": res})
 
 # ── TEXT-BASED SKILL EXTRACTION ────────────────────────────────────────
 @app.route('/api/extract-skills', methods=['POST'])
@@ -58,18 +59,21 @@ def extract_from_text():
     text = d.get('text', '')
     if not text.strip():
         return jsonify({"error": "No text provided"}), 400
-    skills = extract_skills_from_text(text)
-    return jsonify({"extracted_skills": skills})
+    res = extract_skills_from_text(text)
+    skills_list = list(res.get("skills", {}).keys())
+    return jsonify({"extracted_skills": skills_list, "nlp_metadata": res})
 
 # ── GAP ANALYSIS ───────────────────────────────────────────────────────
 @app.route('/api/analyze', methods=['POST'])
 def analyze():
     d = request.json
-    skills = d.get('skills', [])
+    skills = d.get('skills', {})
     job_id = d.get('job_id')
+    print(f"DEBUG: Analyzing job {job_id} with skills: {skills}")
     if not skills or not job_id:
         return jsonify({"error": "skills list and job_id are required"}), 400
     result = calculate_gap(skills, int(job_id))
+    print(f"DEBUG: Matched: {result.get('matched_skills')}")
     return jsonify(result)
 
 # ── COMPANIES ──────────────────────────────────────────────────────────
@@ -78,13 +82,14 @@ def get_companies():
     job_id = request.args.get('job_id')
     if job_id:
         rows = query_db("""
-            SELECT c.*, jr.title as role_title FROM companies c
+            SELECT DISTINCT c.name, c.location, c.apply_url, c.description, jr.title as role_title 
+            FROM companies c
             JOIN job_roles jr ON c.job_role_id = jr.id
             WHERE c.job_role_id = %s
-        """, (job_id,))
+        """, (int(job_id),))
     else:
         rows = query_db("SELECT * FROM companies")
-    return jsonify([dict(r) for r in rows])
+    return jsonify(rows)
 
 # ── MOCK TEST ──────────────────────────────────────────────────────────
 @app.route('/api/mock-test', methods=['GET'])
@@ -95,8 +100,8 @@ def get_mock_test():
     questions = query_db("""
         SELECT id, question, option_a, option_b, option_c, option_d
         FROM mock_questions WHERE job_id = %s ORDER BY RANDOM() LIMIT 10
-    """, (job_id,))
-    return jsonify([dict(q) for q in questions])
+    """, (int(job_id),))
+    return jsonify(questions)
 
 @app.route('/api/mock-test/submit', methods=['POST'])
 def submit_mock_test():
@@ -211,6 +216,31 @@ def chatbot():
             else:
                 response = "Tell me your target role (e.g. 'Data Scientist roadmap') and I'll give you a step-by-step plan!"
 
+    # Interview Tips
+    elif any(w in message for w in ['interview', 'prepare', 'questions', 'tips']):
+        response = f"🎯 **Interview Prep for {role.title() if role else 'your role'}:**\n\n"
+        response += "1️⃣ **Master the Basics** — Be ready to explain projects in your resume using the STAR method.\n"
+        response += "2️⃣ **Technical Deep Dive** — Review core concepts like " + (", ".join(missing_skills[:2]) if missing_skills else "data structures and algorithms") + ".\n"
+        response += "3️⃣ **Soft Skills** — Mention teamwork and how you solve complex problems.\n"
+        response += "\nWould you like a sample question?"
+
+    # Salary Ranges
+    elif any(w in message for w in ['salary', 'pay', 'money', 'earn', 'package']):
+        role_name = role.title() if role else "Technical Roles"
+        response = f"💰 **Estimated Salary for {role_name} (India):**\n\n"
+        response += "• **Fresher:** ₹4L - ₹8L per annum\n"
+        response += "• **Mid-Level:** ₹10L - ₹20L per annum\n"
+        response += "• **Senior:** ₹25L+ per annum\n\n"
+        response += "_Note: Ranges vary based on company and location._"
+
+    # Projects
+    elif any(w in message for w in ['project', 'build', 'create', 'portfolio']):
+        response = "🚀 **Recommended Projects to bridge your gaps:**\n\n"
+        if missing_skills:
+            response += f"Since you're missing **{missing_skills[0]}**, try building a project that uses it directly (e.g. a dashboard or a web app).\n"
+        else:
+            response += "Build a Full-Stack portfolio app or an End-to-End ML pipeline to showcase your skills!"
+
     # Skill gaps
     elif any(w in message for w in ['skill', 'gap', 'missing', 'learn', 'need']):
         if missing_skills:
@@ -242,10 +272,10 @@ def get_recommendations():
             JOIN skills s ON r.skill_id = s.id
             JOIN job_skills js ON js.skill_id = s.id
             WHERE js.job_id = %s
-        """, (job_id,))
+        """, (int(job_id),))
     else:
         recs = query_db("SELECT r.*, s.name as skill_name FROM recommendations r JOIN skills s ON r.skill_id=s.id")
-    return jsonify([dict(r) for r in recs])
+    return jsonify(recs)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

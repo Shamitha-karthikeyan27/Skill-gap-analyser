@@ -40,6 +40,8 @@ def register_user(username, email, password):
         (username, email, hashed)
     )
     user = query_db("SELECT id FROM users WHERE email=%s", (email,), one=True)
+    if not user:
+        return None, "Error creating user"
     token = generate_token(user['id'], username)
     return token, None
 

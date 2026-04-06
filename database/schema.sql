@@ -1,6 +1,3 @@
--- ============================================================
--- Smart Skill Gap Analyzer — Full Database Schema
--- ============================================================
 
 -- USERS
 CREATE TABLE IF NOT EXISTS users (

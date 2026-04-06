@@ -79,11 +79,16 @@ SKILLS = [
     ('Python','Programming'),('SQL','Database'),('Machine Learning','AI/ML'),
     ('Data Visualization','Analytics'),('Statistics','Analytics'),('Excel','Analytics'),
     ('Tableau','Visualization'),('Power BI','Visualization'),('React','Frontend'),
-    ('JavaScript','Frontend'),('Node.js','Backend'),('HTML/CSS','Frontend'),
-    ('Deep Learning','AI/ML'),('NLP','AI/ML'),('Computer Vision','AI/ML'),
-    ('R Language','Analytics'),('Pandas','Data Science'),('NumPy','Data Science'),
-    ('Scikit-learn','AI/ML'),('TensorFlow','AI/ML'),('Communication','Soft Skills'),
-    ('MongoDB','Database'),('PostgreSQL','Database'),('Docker','DevOps'),('Git','DevOps'),
+    ('JavaScript','Frontend'),('Node.js','Backend'),('HTML','Frontend'),('CSS','Frontend'),
+    ('HTML/CSS','Frontend'),('MySQL','Database'),('Java','Programming'),('C','Programming'),
+    ('C++','Programming'),('C#','Programming'),('Deep Learning','AI/ML'),('NLP','AI/ML'),
+    ('Computer Vision','AI/ML'),('R Language','Analytics'),('Pandas','Data Science'),
+    ('NumPy','Data Science'),('Scikit-learn','AI/ML'),('TensorFlow','AI/ML'),
+    ('Communication','Soft Skills'),('MongoDB','Database'),('PostgreSQL','Database'),
+    ('Docker','DevOps'),('Git','DevOps'),('Spring Boot','Backend'),('AWS','Cloud'),
+    ('Azure','Cloud'),('GCP','Cloud'),('Jenkins','DevOps'),('Kubernetes','DevOps'),
+    ('SAS','Analytics'),('MATLAB','Analytics'),('PyTorch','AI/ML'),('Keras','AI/ML'),
+    ('Angular','Frontend'),('Vue.js','Frontend'),('Redis','Database'),
 ]
 
 ROLES = [
@@ -96,9 +101,9 @@ ROLES = [
 
 ROLE_SKILLS = {
     'Data Analyst': ['Python','SQL','Statistics','Excel','Data Visualization','Tableau','Power BI'],
-    'Data Scientist': ['Python','Machine Learning','Deep Learning','Statistics','Pandas','NumPy','Scikit-learn','TensorFlow'],
-    'Full Stack Developer': ['React','JavaScript','Node.js','HTML/CSS','SQL','MongoDB','Git'],
-    'Machine Learning Engineer': ['Python','Machine Learning','Deep Learning','TensorFlow','Docker','NLP','Computer Vision','Scikit-learn'],
+    'Data Scientist': ['Python','Machine Learning','Deep Learning','Statistics','Pandas','NumPy','Scikit-learn','TensorFlow','Inheritance','Class'],
+    'Full Stack Developer': ['React','JavaScript','Node.js','HTML/CSS','SQL','MongoDB','Git','Class','Inheritance','Abstraction'],
+    'Machine Learning Engineer': ['Python','Machine Learning','Deep Learning','TensorFlow','Docker','NLP','Computer Vision','Scikit-learn','Inheritance','Class'],
     'Business Analyst': ['SQL','Excel','Power BI','Statistics','Communication','Data Visualization'],
 }
 
@@ -166,6 +171,11 @@ MOCK_QUESTIONS = {
         ('Which chart type shows proportions?','Bar chart','Line chart','Pie chart','Scatter plot','C','Pie charts effectively show part-to-whole relationships.'),
         ('What is standard deviation?','Average value','Middle value','Spread of data from mean','Most common value','C','Standard deviation measures how spread out data is.'),
         ('SQL command to get unique values?','UNIQUE','DISTINCT','DIFFERENT','FILTER','B','SELECT DISTINCT removes duplicate rows from results.'),
+        ('What is a primary key?','A foreign key','Unique identifier for a row','A non-unique column','A type of chart','B','Primary keys uniquely identify each record in a table.'),
+        ('What is data normalization?','Deleting redundant data','Grouping data by color','Formatting dates','None of above','A','Normalization reduces data redundancy and improves data integrity.'),
+        ('Purpose of a JOIN in SQL?','Delete rows','Combine data from two tables','Sort data','Rename columns','B','JOINs are used to retrieve related data from multiple tables.'),
+        ('What is a Histogram?','A type of pie chart','Graph showing frequency distribution','A time series line','None','B','Histograms show the distribution of numerical data.'),
+        ('Which SQL command removes a table?','DELETE','REMOVE','DROP','CLEAR','C','DROP TABLE removes the entire table structure and data.'),
     ],
     'Data Scientist': [
         ('Best metric for imbalanced classification?','Accuracy','F1 Score','MSE','R-squared','B','F1 Score balances precision and recall for imbalanced data.'),
@@ -178,6 +188,10 @@ MOCK_QUESTIONS = {
         ('What does the ROC curve plot?','Loss vs epochs','True vs False Positive Rate','Accuracy vs features','Precision vs F1','B','ROC plots TPR vs FPR to evaluate classification models.'),
         ('What is the bias-variance tradeoff?','Speed vs accuracy','Training time vs model size','Model error from assumptions vs sensitivity to data','None','C','High bias = underfitting, high variance = overfitting.'),
         ('Which library builds neural networks?','Pandas','Scikit-learn','TensorFlow','Matplotlib','C','TensorFlow (and PyTorch) are used to build neural networks.'),
+        ('What is cross-validation?','Splits data once','Technique to evaluate model on multiple folds','A way to double data','None','B','K-fold cross-validation uses different parts of data for training/testing.'),
+        ('What is a random forest?','A single tree','An ensemble of decision trees','A type of sorting','None','B','Random Forest uses multiple decision trees to improve accuracy.'),
+        ('Purpose of an activation function?','Sort data','Introduce non-linearity into a neural network','Define model name','None','B','Activation functions allow neural networks to learn non-linear patterns.'),
+        ('What is a learning rate?','Speed of model','Step size at each iteration while moving toward a minimum','Complexity of model','None','B','Learning rate controls how much to change the model in response to the error.'),
     ],
     'Full Stack Developer': [
         ('What does virtual DOM in React do?','Edits browser DOM directly','Computes optimal DOM updates','Stores user data','Renders server-side HTML','B','React diffs virtual DOM to apply minimal real DOM updates.'),
@@ -190,6 +204,10 @@ MOCK_QUESTIONS = {
         ('What is CORS?','A CSS rule','A database term','Policy for cross-origin HTTP requests','A React hook','C','CORS controls which origins can access a web server.'),
         ('What does npm stand for?','Node Package Manager','New Program Module','None of above','Network Package Module','A','npm is the package manager for Node.js.'),
         ('What is Git used for?','Running a web server','Version control','Database management','UI styling','B','Git is a distributed version control system for code.'),
+        ('Difference between == and === in JS?','No difference','=== checks type and value; == only value','== is faster','None','B','Strict equality (===) checks both value and data type.'),
+        ('What is a CSS selector?','A way to find data','Pattern to select the elements you want to style','A JS library','None','B','Selectors are used to target HTML elements for styling.'),
+        ('What is Redux?','A backend framework','State management for JS apps','A type of DB','None','B','Redux is often used with React to manage global app state.'),
+        ('What does the "head" tag in HTML contain?','Main page content','Metadata and link to scripts/styles','Footer info','None','B','The head contains info NOT shown to the user, like titles and links.'),
     ],
     'Machine Learning Engineer': [
         ('What is a Docker container?','A virtual machine','Lightweight portable app environment','Database server','Cloud storage','B','Containers package app + dependencies into isolated environments.'),
@@ -197,6 +215,15 @@ MOCK_QUESTIONS = {
         ('Purpose of a validation set?','Train the model','Test the final model','Tune hyperparameters','Store data','C','Validation set is used to tune hyperparameters during training.'),
         ('What is gradient descent?','A data structure','Optimization algorithm to minimize loss','A type of neural network','A regularization technique','B','Gradient descent iteratively updates params to minimize the loss function.'),
         ('What is model serialization?','Deleting a model','Saving a trained model to disk','Training on GPU','Data preprocessing','B','Serialization (e.g. pickle) saves a model for later use.'),
+        ('What is an epoch in ML?','One pass through the whole training set','One pass through a single batch','The time it takes to train','Model score','A','An epoch is one complete pass through the entire training dataset.'),
+        ('Which is a distance-based algorithm?','Linear Regression','Random Forest','KNN','Naive Bayes','C','K-Nearest Neighbors uses distance metrics like Euclidean distance.'),
+        ('What is the "kernel trick" in SVM?','A ways to use GPUs','Mapping data to higher dimensions without computing them','Removing outliers','A data cleaning method','B','The kernel trick allows SVMs to find non-linear boundaries in high-dim space.'),
+        ('What is transfer learning?','Moving data between servers','Using a pre-trained model on a new task','Changing model parameters','Training from scratch','B','Transfer learning uses knowledge from a pre-trained model for a related task.'),
+        ('Common library for MLOps tracking?','NumPy','MLflow','Pandas','Requests','B','MLflow is widely used for experiment tracking and model management.'),
+        ('What is a feature vector?','A matrix','Numerical representation of object features','A model type','None','B','Feature vectors represent various attributes of an object in a numerical way.'),
+        ('What is hyperparameter tuning?','Training the model','Finding the best params for a model','Cleaning data','None','B','Tuning involves selecting the best set of hyperparameters for an algorithm.'),
+        ('What is a confusion matrix?','A complex DB','Table used to evaluate classification performance','A data error','None','B','A confusion matrix shows True/False Positives/Negatives.'),
+        ('What is "Inference" in ML?','Training the model','Using a trained model to make predictions','Writing code','None','B','Inference is the process of using a deployed model on new data.'),
     ],
     'Business Analyst': [
         ('What is a KPI?','Key Performance Indicator','Key Process Index','Know Progress Item','None','A','KPIs are measurable values showing how well objectives are being achieved.'),
@@ -204,6 +231,15 @@ MOCK_QUESTIONS = {
         ('What does SWOT stand for?','Strengths, Weaknesses, Opportunities, Threats','Software, Work, Operation, Test','None','Skills, Work, Options, Tasks','A','SWOT analysis evaluates internal and external business factors.'),
         ('What is a stakeholder?','A database table','A person with interest in the project','A type of chart','An SQL command','B','Stakeholders are individuals or groups affected by or interested in the project.'),
         ('What is meant by data-driven decision making?','Using gut feeling','Making decisions based on data analysis','Guessing outcomes','Avoiding data','B','Data-driven decisions use facts and analytics rather than assumptions.'),
+        ('What does "Scope Creep" mean?','Uncontrolled changes in a project scope','A type of virus','A project manager personality','Meeting deadlines early','A','Scope creep is when a project grows beyond its original goal without approval.'),
+        ('What is a User Story?','A biography of a user','Short description of a feature from user perspective','A marketing ad','A technical manual','B','User stories explain what a user wants and why, in simple terms.'),
+        ('Which tool is best for Business Intelligence dashboards?','Notepad','Excel','Tableau','Photoshop','C','Tableau (and Power BI) are dedicated BI tools for data visualization.'),
+        ('What is requirement elicitation?','Deleting requirements','Gathering requirements from stakeholders','Testing the app','Marketing the product','B','Elicitation is the process of discovering requirements from users.'),
+        ('What does MVP stand for?','Most Valuable Player','Minimum Viable Product','Maximum Value project','None','B','MVP is a product with just enough features to satisfy early customers.'),
+        ('What is a Gantt chart?','A pie chart','Timeline for project management','A flow chart','None','B','Gantt charts visualize project schedules and task sequences.'),
+        ('What is requirement prioritization?','Deleting requirements','Ordering requirements by importance/risk','Writing more code','None','B','Prioritization ensures the most critical features are built first.'),
+        ('What is a Use Case?','A test plan','Description of how a user interacts with a system','A bug report','None','B','Use cases capture specific interactions between characters and systems.'),
+        ('What is User Acceptance Testing (UAT)?','Testing by developers','Final phase where real users test the system','A performance test','None','B','UAT verifies if the system meets business requirements before launch.'),
     ],
 }
 

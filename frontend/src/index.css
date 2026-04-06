@@ -613,8 +613,8 @@ select.form-control {
     position: fixed;
     bottom: 88px;
     right: 24px;
-    width: 380px;
-    height: 500px;
+    width: 440px;
+    height: 600px;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 16px;
