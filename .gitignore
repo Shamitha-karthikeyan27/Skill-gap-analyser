@@ -1,2 +1,19 @@
-node_modules/ 
-frontend/node_modules/ 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Node
+node_modules/
+
+# Vite
+.vite/
+dist/
+
+# Env
+.env
